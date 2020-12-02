@@ -45,7 +45,9 @@ type QueueJobs struct {
 func QueueGetMetrics() *QueueMetrics {
 	return ParseQueueMetrics(QueueData())
 }
-
+func QueueGetJobs() *QueueJobs {
+	return ParseQueueJobs(QueueData())
+}
 func transpose(slice [][]string) [][]string {
 	// tranpose the queue info array
     xl := len(slice[0])
