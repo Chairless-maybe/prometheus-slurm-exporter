@@ -38,22 +38,41 @@ type QueueMetrics struct {
 	node_fail   float64
 }
 
+type QueueJobs struct {
+	jobs [][]string
+}
 // Returns the scheduler metrics
 func QueueGetMetrics() *QueueMetrics {
 	return ParseQueueMetrics(QueueData())
 }
 
+func transpose(slice [][]string) [][]string {
+	// tranpose the queue info array
+    xl := len(slice[0])
+    yl := len(slice)
+    result := make([][]string, xl)
+    for i := range result {
+        result[i] = make([]string, yl)
+    }
+    for i := 0; i < xl; i++ {
+        for j := 0; j < yl; j++ {
+            result[i][j] = slice[j][i]
+        }
+    }
+    return result
+}
 func ParseQueueMetrics(input []byte) *QueueMetrics {
+	// get the queue stats
 	var qm QueueMetrics
 	lines := strings.Split(string(input), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, ",") {
 			splitted := strings.Split(line, ",")
-			state := splitted[1]
+			state := splitted[4]
 			switch state {
 			case "PENDING":
 				qm.pending++
-				if len(splitted) > 2 && splitted[2] == "Dependency" {
+				if len(splitted) > 6 && splitted[5] == "Dependency" {
 					qm.pending_dep++
 				}
 			case "RUNNING":
@@ -82,9 +101,22 @@ func ParseQueueMetrics(input []byte) *QueueMetrics {
 	return &qm
 }
 
+func ParseQueueJobs (input []byte) *QueueJobs {
+	// get queue jobs in column format
+	var qj QueueJobs
+	lines := strings.Split(string(input), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, ",") {
+			qj.jobs = append(q.jobs, line)
+		}
+	}
+	qj.jobs = tranpose(qj.jobs)
+	return &qj
+} 
+
 // Execute the squeue command and return its output
 func QueueData() []byte {
-	cmd := exec.Command("squeue", "-a", "-r", "-h", "-o %A,%T,%r", "--states=all")
+	cmd := exec.Command("squeue", "-a", "-r", "-h", "-o %A,%P,%u,%o,%T,%r,%L", "--states=all")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)
