@@ -109,10 +109,10 @@ func ParseQueueJobs (input []byte) *QueueJobs {
 	lines := strings.Split(string(input), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, ",") {
-			qj.jobs = append(q.jobs, line)
+			qj.jobs = append(qj.jobs, strings.Split(line, ","))
 		}
 	}
-	qj.jobs = tranpose(qj.jobs)
+	qj.jobs = transpose(qj.jobs)
 	return &qj
 } 
 
