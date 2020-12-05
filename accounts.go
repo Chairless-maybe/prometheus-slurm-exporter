@@ -26,7 +26,7 @@ import (
 )
 
 func AccountsData() []byte {
-        cmd := exec.Command("squeue","-a","-r","-h","-o %A|%u|%T|%C")
+        cmd := exec.Command("squeue","-a","-r","-h","-o %A|%u|%T|%C|%P")
         stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)
@@ -46,6 +46,7 @@ type JobMetrics struct {
         running float64
         running_cpus float64
         suspended float64
+        partition string
 }
 
 func ParseAccountsMetrics(input []byte) map[string]*JobMetrics {
@@ -61,6 +62,7 @@ func ParseAccountsMetrics(input []byte) map[string]*JobMetrics {
                         state := strings.Split(line,"|")[2]
                         state = strings.ToLower(state)
                         cpus,_ := strconv.ParseFloat(strings.Split(line,"|")[3],64)
+                        partition := strings.Split(line,"|")[4]
                         pending := regexp.MustCompile(`^pending`)
                         running := regexp.MustCompile(`^running`)
                         suspended := regexp.MustCompile(`^suspended`)
@@ -70,6 +72,7 @@ func ParseAccountsMetrics(input []byte) map[string]*JobMetrics {
                         case running.MatchString(state) == true:
                                 accounts[account].running++
                                 accounts[account].running_cpus += cpus
+                                accounts[account].partition = partition
                         case suspended.MatchString(state) == true:
                                 accounts[account].suspended++
                         }
@@ -83,6 +86,7 @@ type AccountsCollector struct {
         running *prometheus.Desc
         running_cpus *prometheus.Desc
         suspended *prometheus.Desc
+        partition *prometheus.Desc
 }
 
 func NewAccountsCollector() *AccountsCollector {
@@ -92,7 +96,9 @@ func NewAccountsCollector() *AccountsCollector {
                 running: prometheus.NewDesc("slurm_account_jobs_running", "Running jobs for account", labels, nil),
                 running_cpus: prometheus.NewDesc("slurm_account_cpus_running", "Running cpus for account", labels, nil),
                 suspended: prometheus.NewDesc("slurm_account_jobs_suspended", "Suspended jobs for account", labels, nil),
+                suspended: prometheus.NewDesc("slurm_account_job_partitions", "Job partitions for account", labels, nil),
         }
+        
 }
 
 func (ac *AccountsCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -100,6 +106,7 @@ func (ac *AccountsCollector) Describe(ch chan<- *prometheus.Desc) {
         ch <- ac.running
         ch <- ac.running_cpus
         ch <- ac.suspended
+        ch <- ac.partition
 }
 
 func (ac *AccountsCollector) Collect(ch chan<- prometheus.Metric) {
@@ -109,5 +116,6 @@ func (ac *AccountsCollector) Collect(ch chan<- prometheus.Metric) {
                 ch <- prometheus.MustNewConstMetric(ac.running, prometheus.GaugeValue, am[a].running, a)
                 ch <- prometheus.MustNewConstMetric(ac.running_cpus, prometheus.GaugeValue, am[a].running_cpus, a)
                 ch <- prometheus.MustNewConstMetric(ac.suspended, prometheus.GaugeValue, am[a].suspended, a)
+                ch <- prometheus.MustNewConstMetric(ac.partition, prometheus.GaugeValue, am[a].partition, a)
         }
 }
