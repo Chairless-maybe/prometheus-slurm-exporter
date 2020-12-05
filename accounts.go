@@ -91,12 +91,13 @@ type AccountsCollector struct {
 
 func NewAccountsCollector() *AccountsCollector {
         labels := []string{"account"}
+        partition := []string{"partition"}
         return &AccountsCollector{
                 pending: prometheus.NewDesc("slurm_account_jobs_pending", "Pending jobs for account", labels, nil),
                 running: prometheus.NewDesc("slurm_account_jobs_running", "Running jobs for account", labels, nil),
                 running_cpus: prometheus.NewDesc("slurm_account_cpus_running", "Running cpus for account", labels, nil),
                 suspended: prometheus.NewDesc("slurm_account_jobs_suspended", "Suspended jobs for account", labels, nil),
-                suspended: prometheus.NewDesc("slurm_account_job_partitions", "Job partitions for account", labels, nil),
+                suspended: prometheus.NewDesc("slurm_account_job_partitions", "Job partitions for account", partition, nil),
         }
         
 }
@@ -116,6 +117,6 @@ func (ac *AccountsCollector) Collect(ch chan<- prometheus.Metric) {
                 ch <- prometheus.MustNewConstMetric(ac.running, prometheus.GaugeValue, am[a].running, a)
                 ch <- prometheus.MustNewConstMetric(ac.running_cpus, prometheus.GaugeValue, am[a].running_cpus, a)
                 ch <- prometheus.MustNewConstMetric(ac.suspended, prometheus.GaugeValue, am[a].suspended, a)
-                ch <- prometheus.MustNewConstMetric(ac.partition, prometheus.GaugeValue, am[a].partition, a)
+                ch <- prometheus.MustNewConstMetric(1, prometheus.GaugeValue, 1, a)
         }
 }
