@@ -57,7 +57,7 @@ func ParseAccountsMetrics(input []byte) map[string]*JobMetrics {
                         account := strings.Split(line,"|")[1]
                         _,key := accounts[account]
                         if !key {
-                                accounts[account] = &JobMetrics{0,0,0,0}
+                                accounts[account] = &JobMetrics{0,0,0,0,"none"}
                         }
                         state := strings.Split(line,"|")[2]
                         state = strings.ToLower(state)
@@ -97,7 +97,7 @@ func NewAccountsCollector() *AccountsCollector {
                 running: prometheus.NewDesc("slurm_account_jobs_running", "Running jobs for account", labels, nil),
                 running_cpus: prometheus.NewDesc("slurm_account_cpus_running", "Running cpus for account", labels, nil),
                 suspended: prometheus.NewDesc("slurm_account_jobs_suspended", "Suspended jobs for account", labels, nil),
-                suspended: prometheus.NewDesc("slurm_account_job_partitions", "Job partitions for account", partition, nil),
+                partition: prometheus.NewDesc("slurm_account_job_partitions", "Job partitions for account", partition, nil),
         }
         
 }
@@ -117,6 +117,6 @@ func (ac *AccountsCollector) Collect(ch chan<- prometheus.Metric) {
                 ch <- prometheus.MustNewConstMetric(ac.running, prometheus.GaugeValue, am[a].running, a)
                 ch <- prometheus.MustNewConstMetric(ac.running_cpus, prometheus.GaugeValue, am[a].running_cpus, a)
                 ch <- prometheus.MustNewConstMetric(ac.suspended, prometheus.GaugeValue, am[a].suspended, a)
-                ch <- prometheus.MustNewConstMetric(1, prometheus.GaugeValue, 1, a)
+                ch <- prometheus.MustNewConstMetric(ac.partition, prometheus.GaugeValue, 1, a)
         }
 }
